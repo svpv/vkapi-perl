@@ -28,13 +28,17 @@ sub _request {
 	return $self->{browser}->get($uri);
 }
 
-sub auth { # dirty hack
-	# you have not seen this
-	# forget it
+sub auth {
 	my ($self,$login,$password,$scope) = @_;
-	# XXX: useless use of private variable in void context?
-	${$self}{"login","password","scope"} = ($login, $password, $scope); # reuse in case of reauth
-	$self->{browser}->get($self->auth_uri($scope));
+	$self->_request(
+		{
+			client_id => $self->{api_id},
+			redirect_uri => "blank.html",
+			scope => $scope,
+			response_type => "token",
+			display => "wap",
+		}, "https://api.vkontakte.ru/oauth/authorize"
+	);
 	$self->{browser}->submit_form(
 		with_fields => {
 			email => $login,
@@ -42,62 +46,17 @@ sub auth { # dirty hack
 		},
 	); # log in
 	$self->{browser}->submit unless $self->{browser}->uri =~ m|^https://oauth.vk.com/blank.html|; # allow access if requested to
-	return $self->redirected($self->{browser}->uri);
-	# you cannot remember what did you just read
-}
-
-sub auth_uri {
-	my ($self, $scope, $display) = @_;
-	(my $uri = URI::->new("https://api.vkontakte.ru/oauth/authorize"))->query_form(
-		{
-			client_id => $self->{api_id},
-			redirect_uri => "blank.html",
-			scope => $scope,
-			response_type => "token",
-			display => $display,
-		}
-	);
-	return $uri->canonical;
-}
-
-sub redirected {
-	my ($self, $uri) = @_;
-	my %params = map { split /=/,$_,2 } split /&/,$1 if $uri =~ m|https://oauth.vk.com/blank.html#(.*)|;
-	croak "No access_token returned (wrong login/password?)" unless defined $params{access_token};
+	my %params = map { split /=/,$_,2 } split /&/,$1 if $self->{browser}->uri =~ m|https://oauth.vk.com/blank.html#(.*)|;
+	croak "No access_token returned (wrong login/password?)\n" unless defined $params{access_token};
 	$self->{access_token} = $params{access_token};
-	croak "No token expiration time returned" unless $params{expires_in};
-	$self->{auth_time} = time;
-	$self->{expires_in} = $params{expires_in};
 	return $self;
 }
-
 
 sub api {
 	my ($self,$method,$params) = @_;
 	croak "Cannot make API calls unless authentificated" unless defined $self->{access_token};
-	if (time - $self->{auth_time} > $self->{expires_in}) {
-		if ($self->{login} && $self->{password}) { # you didn't see this
-			$self->auth($self->{"login","password","scope"}); # and this
-		} else {
-			croak "access_token expired";
-		}
-	}
 	$params->{access_token} = $self->{access_token};
-	REQUEST: {
-		my $response = decode_json $self->_request($params,"https://api.vk.com/method/$method")->decoded_content;
-		if ($response->{response}) {
-			return $response->{response};
-		} elsif ($response->{error}) {
-			if (6 == $response->{error}{error_code}) {
-				sleep 1;
-				redo REQUEST;
-			} else {
-				croak "API call returned error ".$response->{error}{error_msg};
-			}
-		} else {
-			croak "API call didn't return response or error";
-		}
-	}
+	return decode_json $self->_request($params,"https://api.vk.com/method/$method")->decoded_content;
 }
 
 1;
@@ -111,11 +70,7 @@ VKontakte::API::Standalone - Perl extension for creating standalone Vkontakte AP
 
   use VKontakte::API::Standalone;
   my $vk = new VKontakte::API::Standalone "12345678";
-  my $auth_uri = $vk->auth_uri("wall,messages");
-
-  # make the user able to enter login and password at this URI
-  
-  $vk->redirected($where);
+  $vk->auth("+1234567890","superpassword","wall,messages");
   $vk->api("activity.set",{text => "playing with VK API"});
 
 
@@ -136,33 +91,17 @@ management page) and creates the WWW::Mechanize object.
 
 =head1 ATTRIBUTES
 
-=begin comment
+=over
 
 =item $vk->auth($login,$password,$scope)
 
 This method should be called first. It uses OAuth2 to authentificate the user at the vk.com server
-and accepts the specified scope (seen at L<https://vk.com/developers.php?oid=-17680044&p=Application_Access_Rights>).
+and accepts the specified scope (seen at https://vk.com/developers.php?oid=-17680044&p=Application_Access_Rights).
 After obtaining the access token is saved for future use.
-
-=end comment
-
-=over
-
-=item $vk->auth_uri($scope)
-
-This method should be called first. It returns the URI of the login page to show to the user
-(developer should call a browser somehow, see L<https://vk.com/developers.php?oid=-17680044&p=Authorizing_Client_Applications>
-for more info).
-
-=item $vk->redirected($uri)
-
-This method should be called after a successful authorisation with the URI user was redirected
-to. Then the expiration time and the access token are retreived from this URI and stored in
-the $vk object.
 
 =item $vk->api($method,{parameter => "value", parameter => "value" ...})
 
-This method calls the API methods on the server, as described on L<https://vk.com/developers.php?oid=-17680044&p=Making_Requests_to_API>.
+This method calls the API methods on the server, as described on https://vk.com/developers.php?oid=-17680044&p=Making_Requests_to_API.
 Resulting JSON is parsed and returned as a hash reference.
 
 =back 
@@ -173,11 +112,12 @@ Probably many. This is beta version.
 
 API usage timeout is not handled.
 
-Captcha is not supported.
+Request frequency is not limited. Some of your requests will fail if you are
+too fast.
 
 =head1 SEE ALSO
 
-L<https://vk.com/developers.php> for the list of methods and how to use them.
+https://vk.com/developers.php for the list of methods and how to use them.
 
 =head1 AUTHOR
 
