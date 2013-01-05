@@ -1,0 +1,6 @@
+Revision history for Perl extension VKontakte::API::Standalone.
+
+0.01  Sun Nov  4 21:46:21 2012
+	- original version; created by h2xs 1.23 with options
+		-X -b 5.8.0 -n VKontakte::API::Standalone
+

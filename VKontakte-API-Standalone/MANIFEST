@@ -1,0 +1,6 @@
+Changes
+Makefile.PL
+MANIFEST
+README
+t/VKontakte-API-Standalone.t
+lib/VKontakte/API/Standalone.pm
