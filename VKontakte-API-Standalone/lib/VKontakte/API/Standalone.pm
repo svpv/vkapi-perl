@@ -32,8 +32,7 @@ sub auth { # dirty hack
 	# you have not seen this
 	# forget it
 	my ($self,$login,$password,$scope) = @_;
-	# XXX: useless use of private variable in void context?
-	${$self}{"login","password","scope"} = ($login, $password, $scope); # reuse in case of reauth
+	@{$self}{"login","password","scope"} = ($login, $password, $scope); # reuse in case of reauth
 	$self->{browser}->get($self->auth_uri($scope));
 	$self->{browser}->submit_form(
 		with_fields => {
@@ -88,9 +87,17 @@ sub api {
 		if ($response->{response}) {
 			return $response->{response};
 		} elsif ($response->{error}) {
-			if (6 == $response->{error}{error_code}) {
+			if (6 == $response->{error}{error_code}) { # Too many requests per second. 
 				sleep 1;
 				redo REQUEST;
+			} elsif (14 == $response->{error}{error_code}) { # Captcha is needed
+				if ($self->{captcha_handler}) {
+					$params->{captcha_key} = $self->{captcha_handler}->($response->{error}{captcha_img});
+					$params->{captcha_sid} = $response->{error}{captcha_sid};
+					redo REQUEST;
+				} else {
+					croak "Captcha is needed and no captcha handler specified";
+				}
 			} else {
 				croak "API call returned error ".$response->{error}{error_msg};
 			}
@@ -98,6 +105,13 @@ sub api {
 			croak "API call didn't return response or error";
 		}
 	}
+}
+
+sub captcha_handler {
+	my ($self, $handler) = @_;
+	croak "\$handler is not a subroutine reference" unless ref $handler eq "CODE";
+	$self->{captcha_handler} = $handler;
+	return $self;
 }
 
 1;
@@ -165,15 +179,15 @@ the $vk object.
 This method calls the API methods on the server, as described on L<https://vk.com/developers.php?oid=-17680044&p=Making_Requests_to_API>.
 Resulting JSON is parsed and returned as a hash reference.
 
+=item $vk->captcha_handler($sub)
+
+Sets the sub to call when CAPTCHA needs to be entered.
+
 =back 
 
 =head1 BUGS
 
 Probably many. This is beta version.
-
-API usage timeout is not handled.
-
-Captcha is not supported.
 
 =head1 SEE ALSO
 
