@@ -9,16 +9,26 @@ use WWW::Mechanize;
 use JSON;
 use Carp;
 
-our $VERSION = '0.1';
+our $VERSION = '0.11';
 
 sub new {
-	my ($class,$id) = @_;
+	my $class = shift;
 	my $self = bless {},$class;
-	$self->{api_id} = $id;
 	$self->{browser} =  WWW::Mechanize::->new(
 		agent => __PACKAGE__.$VERSION,
 		autocheck => 1,
 	);
+	if (@_ == 1) {
+		$self->{api_id} = $_[0];
+	} elsif (@_ % 2 == 0) {
+		my %opt = @_;
+		for my $key (qw/api_id errors_nonfatal captcha_handler/) {
+			$self->{$key} = $opt{$key} if defined $opt{$key};
+		}
+		croak "api_id is required" unless $self->{api_id};
+	} else {
+		croak "wrong number of arguments to constructor";
+	}
 	return $self;
 }
 
@@ -143,12 +153,32 @@ This module is just a wrapper for some JSON parsing and WWW::Mechanize magic, no
 
 =item $vk = Net::VKontakte::Standalone::->new($api_id);
 
+=item $vk = Net::Vkontalte::Standalone::->new( key => value );
+
 This creates the main object, sets the API ID variable (which can be got from the application
 management page) and creates the WWW::Mechanize object.
 
+Possible keys:
+
+=over 8
+
+=item api_id
+
+API ID of the application, required.
+
+=item errors_nonfatal
+
+If true, return undef instead of dieing upon receiving an API error. If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
+
+=item captcha_handler
+
+Should be a coderef to be called upon receiving {error} requiring CAPTCHA. The coderef will be called with the CAPTCHA URL as the only argument and should return the captcha answer (decoded to characters if needed).
+
+=back
+
 =back 
 
-=head1 ATTRIBUTES
+=head1 METHODS
 
 =begin comment
 
@@ -183,11 +213,19 @@ Resulting JSON is parsed and returned as a hash reference.
 
 Sets the sub to call when CAPTCHA needs to be entered.
 
+=item $vk->error
+
+Returns the last {error} subhash received (if errors_nonfatal is true).
+
+=item $vk->errors_nonfatal
+
+If true, return undef instead of dieing upon receiving an API error. If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
+
 =back 
 
 =head1 BUGS
 
-Probably many. This is beta version.
+Probably many. Feel free to report my mistakes and propose changes.
 
 =head1 SEE ALSO
 
