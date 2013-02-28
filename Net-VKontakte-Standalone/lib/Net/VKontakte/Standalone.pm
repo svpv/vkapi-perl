@@ -120,7 +120,9 @@ sub api {
 				}
 			}
 		} else {
-			croak "API call didn't return response or error";
+			croak "API call didn't return response or error".
+				$Carp::Verbose ? eval { require Data::Dumper; Data::Dumper::Dumper($response) }
+				: "";
 		}
 	}
 }
