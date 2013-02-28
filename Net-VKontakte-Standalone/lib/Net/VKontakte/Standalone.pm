@@ -20,15 +20,15 @@ sub new {
 	);
 	if (@_ == 1) {
 		$self->{api_id} = $_[0];
-	} elsif (@_ % 2 == 0) {
+	} elsif (@_ % 2 == 0) { # smells like hash
 		my %opt = @_;
 		for my $key (qw/api_id errors_noauto captcha_handler/) {
 			$self->{$key} = $opt{$key} if defined $opt{$key};
 		}
-		croak "api_id is required" unless $self->{api_id};
 	} else {
 		croak "wrong number of arguments to constructor";
 	}
+	croak "api_id is required" unless $self->{api_id};
 	return $self;
 }
 
@@ -97,19 +97,27 @@ sub api {
 		if ($response->{response}) {
 			return $response->{response};
 		} elsif ($response->{error}) {
-			if (6 == $response->{error}{error_code}) { # Too many requests per second. 
-				sleep 1;
-				redo REQUEST;
-			} elsif (14 == $response->{error}{error_code}) { # Captcha is needed
-				if ($self->{captcha_handler}) {
-					$params->{captcha_key} = $self->{captcha_handler}->($response->{error}{captcha_img});
-					$params->{captcha_sid} = $response->{error}{captcha_sid};
-					redo REQUEST;
-				} else {
-					croak "Captcha is needed and no captcha handler specified";
+			if ($self->{errors_noauto}) {
+				$self->{error} = $response->{error};
+				if (ref $self->{errors_noauto} and ref $self->{errors_noauto} eq "CODE") {
+					$self->{errors_noauto}->($response->{error});
 				}
+				return;
 			} else {
-				croak "API call returned error ".$response->{error}{error_msg};
+				if (6 == $response->{error}{error_code}) { # Too many requests per second. 
+					sleep 1;
+					redo REQUEST;
+				} elsif (14 == $response->{error}{error_code}) { # Captcha is needed
+					if ($self->{captcha_handler}) {
+						$params->{captcha_key} = $self->{captcha_handler}->($response->{error}{captcha_img});
+						$params->{captcha_sid} = $response->{error}{captcha_sid};
+						redo REQUEST;
+					} else {
+						croak "Captcha is needed and no captcha handler specified";
+					}
+				} else {
+					croak "API call returned error ".$response->{error}{error_msg};
+				}
 			}
 		} else {
 			croak "API call didn't return response or error";
@@ -121,6 +129,16 @@ sub captcha_handler {
 	my ($self, $handler) = @_;
 	croak "\$handler is not a subroutine reference" unless ref $handler eq "CODE";
 	$self->{captcha_handler} = $handler;
+	return $self;
+}
+
+sub error {
+	return shift->{error};
+}
+
+sub error_noauto {
+	my ($self, $noauto) = @_;
+	$self->{error_noauto} = $noauto; # whatever this means
 	return $self;
 }
 
