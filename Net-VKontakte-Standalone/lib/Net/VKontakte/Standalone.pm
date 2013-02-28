@@ -22,7 +22,7 @@ sub new {
 		$self->{api_id} = $_[0];
 	} elsif (@_ % 2 == 0) {
 		my %opt = @_;
-		for my $key (qw/api_id errors_nonfatal captcha_handler/) {
+		for my $key (qw/api_id errors_noauto captcha_handler/) {
 			$self->{$key} = $opt{$key} if defined $opt{$key};
 		}
 		croak "api_id is required" unless $self->{api_id};
@@ -166,13 +166,13 @@ Possible keys:
 
 API ID of the application, required.
 
-=item errors_nonfatal
+=item errors_noauto
 
-If true, return undef instead of dieing upon receiving an API error. If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
+If true, return undef instead of automatic error handling (which includes limiting requests per second, asking for captcha and throwing exceptions). If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
 
 =item captcha_handler
 
-Should be a coderef to be called upon receiving {error} requiring CAPTCHA. The coderef will be called with the CAPTCHA URL as the only argument and should return the captcha answer (decoded to characters if needed).
+Should be a coderef to be called upon receiving {error} requiring CAPTCHA. The coderef will be called with the CAPTCHA URL as the only argument and should return the captcha answer (decoded to characters if needed). Works only when errors_noauto is false.
 
 =back
 
@@ -211,15 +211,15 @@ Resulting JSON is parsed and returned as a hash reference.
 
 =item $vk->captcha_handler($sub)
 
-Sets the sub to call when CAPTCHA needs to be entered.
+Sets the sub to call when CAPTCHA needs to be entered. Works only when errors_noauto is false.
 
 =item $vk->error
 
 Returns the last {error} subhash received (if errors_nonfatal is true).
 
-=item $vk->errors_nonfatal
+=item $vk->errors_noauto
 
-If true, return undef instead of dieing upon receiving an API error. If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
+If true, return undef instead of automatic handling API error. If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
 
 =back 
 
