@@ -39,8 +39,6 @@ sub _request {
 }
 
 sub auth { # dirty hack
-	# you have not seen this
-	# forget it
 	my ($self,$login,$password,$scope) = @_;
 	@{$self}{"login","password","scope"} = ($login, $password, $scope); # reuse in case of reauth
 	$self->{browser}->get($self->auth_uri($scope));
@@ -52,7 +50,6 @@ sub auth { # dirty hack
 	); # log in
 	$self->{browser}->submit unless $self->{browser}->uri =~ m|^https://oauth.vk.com/blank.html|; # allow access if requested to
 	return $self->redirected($self->{browser}->uri);
-	# you cannot remember what did you just read
 }
 
 sub auth_uri {
@@ -85,10 +82,18 @@ sub api {
 	my ($self,$method,$params) = @_;
 	croak "Cannot make API calls unless authentificated" unless defined $self->{access_token};
 	if (time - $self->{auth_time} > $self->{expires_in}) {
-		if ($self->{login} && $self->{password} && $self->{scope}) { # you didn't see this
-			$self->auth($self->{"login","password","scope"}); # and this
+		if ($self->{login} && $self->{password} && $self->{scope}) {
+			$self->auth($self->{"login","password","scope"});
 		} else {
-			croak "access_token expired";
+			if ($self->{errors_noauto}) {
+				$self->{error} = "access_token expired";
+					if (ref $self->{errors_noauto} and ref $self->{errors_noauto} eq "CODE") {
+						$self->{errors_noauto}->({error_code => "none", error_msg => "access_token expired"});
+					}
+				return;
+			} else {
+				croak "access_token expired";
+			}
 		}
 	}
 	$params->{access_token} = $self->{access_token};
