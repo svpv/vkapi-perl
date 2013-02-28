@@ -1,4 +1,4 @@
-package VKontakte::Standalone;
+package Net::VKontakte::Standalone;
 
 use 5.008000;
 use strict;
@@ -119,12 +119,12 @@ __END__
 
 =head1 NAME
 
-VKontakte::Standalone - Perl extension for creating standalone Vkontakte API applications
+Net::VKontakte::Standalone - Perl extension for creating standalone Vkontakte API applications
 
 =head1 SYNOPSIS
 
-  use VKontakte::Standalone;
-  my $vk = new VKontakte::Standalone:: "12345678";
+  use Net::VKontakte::Standalone;
+  my $vk = new Net::VKontakte::Standalone:: "12345678";
   my $auth_uri = $vk->auth_uri("wall,messages");
 
   # make the user able to enter login and password at this URI
@@ -141,7 +141,7 @@ This module is just a wrapper for some JSON parsing and WWW::Mechanize magic, no
 
 =over 4
 
-=item $vk = VKontakte::Standalone::->new($api_id);
+=item $vk = Net::VKontakte::Standalone::->new($api_id);
 
 This creates the main object, sets the API ID variable (which can be got from the application
 management page) and creates the WWW::Mechanize object.

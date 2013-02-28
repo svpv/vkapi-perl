@@ -3,4 +3,4 @@ Makefile.PL
 MANIFEST
 README
 t/VKontakte-Standalone.t
-lib/VKontakte/Standalone.pm
+lib/Net/VKontakte/Standalone.pm
