@@ -252,6 +252,8 @@ If true, return undef instead of automatic handling API error. If this is a code
 
 Probably many. Feel free to report my mistakes and propose changes.
 
+Currently there is no test suite.
+
 =head1 SEE ALSO
 
 L<https://vk.com/developers.php> for the list of methods and how to use them.
