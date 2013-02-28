@@ -143,9 +143,9 @@ sub error {
 	return shift->{error};
 }
 
-sub error_noauto {
+sub errors_noauto {
 	my ($self, $noauto) = @_;
-	$self->{error_noauto} = $noauto; # whatever this means
+	$self->{errors_noauto} = $noauto; # whatever this means
 	return $self;
 }
 
