@@ -149,6 +149,16 @@ sub errors_noauto {
 	return $self;
 }
 
+sub DESTROY {}
+
+sub AUTOLOAD {
+	our $AUTOLOAD;
+	$AUTOLOAD =~ s/.*:://;
+	$AUTOLOAD =~ tr/_/./;
+	my ($self, $params) = @_;
+	$self->api($AUTOLOAD,$params);
+}
+
 1;
 __END__
 
@@ -247,6 +257,16 @@ Returns the last {error} subhash received (if errors_nonfatal is true).
 If true, return undef instead of automatic handling API error. If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
 
 =back 
+
+=head1 AUTOLOADING
+
+Instead of calling $vk->api(...) you can substitute the "."'s by "_"'s in the API method name and call this method on an object instead. For example,
+
+    $vk->api("wall.post", {message => "Hello, world!"});
+
+should be equivalent to
+
+    $vk->wall_post({message => "Hello, world!"});
 
 =head1 BUGS
 
