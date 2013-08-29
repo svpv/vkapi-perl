@@ -121,7 +121,7 @@ sub api {
 				}
 			}
 		} else {
-			croak "API call didn't return response or error".
+			croak "API call didn't return response or error\n".
 				$Carp::Verbose ? eval { require Data::Dumper; Data::Dumper::Dumper($response) }
 				: "";
 		}
@@ -199,11 +199,11 @@ API ID of the application, required.
 
 =item errors_noauto
 
-If true, return undef instead of automatic error handling (which includes limiting requests per second, asking for captcha and throwing exceptions). If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
+If true, return undef instead of automatic error handling (which includes limiting requests per second and throwing exceptions). If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
 
 =item captcha_handler
 
-Should be a coderef to be called upon receiving {error} requiring CAPTCHA. The coderef will be called with the CAPTCHA URL as the only argument and should return the captcha answer (decoded to characters if needed). Works only when errors_noauto is false.
+Should be a coderef to be called upon receiving {error} requiring CAPTCHA. The coderef will be called with the CAPTCHA URL as the only argument and should return the captcha answer (decoded to characters if needed). Works even when errors_noauto is true (or a coderef).
 
 =back
 

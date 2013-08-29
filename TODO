@@ -1,3 +1,2 @@
  - sub import { if (@) { my $vk = new ...; *{caller(...)::vkapi} = sub { $vk->api(...) } }
- - fix captcha handlers when error checking is disabled
  - permament token
