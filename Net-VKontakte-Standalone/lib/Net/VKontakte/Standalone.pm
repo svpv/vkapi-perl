@@ -102,7 +102,11 @@ sub api {
 		if ($response->{response}) {
 			return $response->{response};
 		} elsif ($response->{error}) {
-			if ($self->{errors_noauto}) {
+			if (14 == $response->{error}{error_code} and $self->{captcha_handler}) { # it's a CAPTCHA request, user wants to handle it specially
+				$params->{captcha_key} = $self->{captcha_handler}->($response->{error}{captcha_img});
+				$params->{captcha_sid} = $response->{error}{captcha_sid};
+				redo REQUEST;
+			} elsif ($self->{errors_noauto}) { # user ignores or handles errors by him(her)self, it's not a CAPTCHA or no captcha_handler
 				$self->{error} = $response->{error};
 				if (ref $self->{errors_noauto} and ref $self->{errors_noauto} eq "CODE") {
 					$self->{errors_noauto}->($response->{error});
@@ -112,16 +116,8 @@ sub api {
 				if (6 == $response->{error}{error_code}) { # Too many requests per second. 
 					sleep 1;
 					redo REQUEST;
-				} elsif (14 == $response->{error}{error_code}) { # Captcha is needed
-					if ($self->{captcha_handler}) {
-						$params->{captcha_key} = $self->{captcha_handler}->($response->{error}{captcha_img});
-						$params->{captcha_sid} = $response->{error}{captcha_sid};
-						redo REQUEST;
-					} else {
-						croak "Captcha is needed and no captcha handler specified";
-					}
-				} else {
-					croak "API call returned error ".$response->{error}{error_msg};
+				} else { # other special cases which can be handled automatically?
+					croak "API call returned error: ".$response->{error}{error_msg};
 				}
 			}
 		} else {
