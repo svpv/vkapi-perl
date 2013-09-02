@@ -321,7 +321,7 @@ Resulting JSON is parsed and returned as a hash reference.
 
 =item $vk->captcha_handler($sub)
 
-Sets the sub to call when CAPTCHA needs to be entered. Works only when errors_noauto is false.
+Sets the sub to call when CAPTCHA needs to be entered. Works even when errors_noauto is true.
 
 =item $vk->error
 
@@ -329,7 +329,7 @@ Returns the last {error} subhash received (if errors_nonfatal is true).
 
 =item $vk->errors_noauto
 
-If true, return undef instead of automatic handling API error. If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
+If true, return undef instead of automatic API error handling . If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
 
 =item $vk->access_token($token)
 
