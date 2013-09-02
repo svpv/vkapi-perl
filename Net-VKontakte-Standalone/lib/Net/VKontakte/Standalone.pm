@@ -22,13 +22,13 @@ sub new {
 		$self->{api_id} = $_[0];
 	} elsif (@_ % 2 == 0) { # smells like hash
 		my %opt = @_;
-		for my $key (qw/api_id errors_noauto captcha_handler/) {
+		for my $key (qw/api_id errors_noauto captcha_handler access_token/) {
 			$self->{$key} = $opt{$key} if defined $opt{$key};
 		}
 	} else {
 		croak "wrong number of arguments to constructor";
 	}
-	croak "api_id is required" unless $self->{api_id};
+	croak "api_id or access_token is required" unless $self->{api_id} or $self->{access_token};
 	return $self;
 }
 
@@ -77,6 +77,36 @@ sub redirected {
 	return $self;
 }
 
+sub permament_token {
+	my ($self, %params) = @_;
+	$params{grant_type} = "password";
+	$params{client_id} = $self->{api_id};
+	REDO: { # for CAPTCHA
+		my $result = decode_json $self->_request(\%params, "https://oauth.vk.com/token")->decoded_content;
+		if ($result->{access_token}) {
+			$self->{access_token} = $result->{access_token};
+			return 1;
+		} elsif ($result->{error}) {
+			if ($result->{error} eq "need_captcha" and $self->{captcha_handler}) {
+				$params{captcha_key} = $self->{captcha_handler}->($result->{error}{captcha_img});
+				$params{captcha_sid} = $result->{error}{captcha_sid};
+				redo REDO;
+			} elsif ($self->errors_noauto) {
+				$self->{error} = $result;
+				if (ref $self->{errors_noauto} and ref $self->{errors_noauto} eq 'CODE') {
+					$self->{errors_noauto}->($result);
+				}
+				return;
+			} else {
+				croak "Permament token call returned error ".$result->{error_description};
+			}
+		} else {
+			croak "Permament token call didn't return response or error\n".
+				$Carp::Verbose ? eval { require Data::Dumper; Data::Dumper::Dumper($result) }
+				: "";
+		}
+	}
+}
 
 sub api {
 	my ($self,$method,$params) = @_;
@@ -134,6 +164,11 @@ sub errors_noauto {
 	return $self;
 }
 
+sub access_token {
+	my ($self, $token) = @_;
+	return defined $token ? do { $self->{access_token} = $token } : $self->{access_token};
+}
+
 sub DESTROY {}
 
 sub AUTOLOAD {
@@ -180,11 +215,15 @@ management page) and creates the WWW::Mechanize object.
 
 Possible keys:
 
-=over 8
+=over
 
 =item api_id
 
-API ID of the application, required.
+API ID of the application, required unless access_token is specified.
+
+=item access_token
+
+A valid access_token (for example, a permament token got from persistent storage). Required unless api_id is specified.
 
 =item errors_noauto
 
@@ -225,6 +264,56 @@ This method should be called after a successful authorisation with the URI user 
 to. Then the expiration time and the access token are retreived from this URI and stored in
 the $vk object.
 
+=item $vk->permament_token(params => "values", ...);
+
+This method provides another way of (non-interactive) authentification:
+
+=over
+
+=item Your application should be trusted by VK.com
+
+=item The token is permament, it can be stored and used again
+
+=item You should not store the login and the password
+
+=item Required parameters are:
+
+=over
+
+=item client_secret
+
+Your application's secret
+
+=item username
+
+User's login
+
+=item password
+
+User's password
+
+=back
+
+=item Optional parameters are:
+
+=over
+
+=item scope
+
+Needed access rights, as in L<http://vk.com/dev/permissions>
+
+=item test_redirect_uri
+
+Set it to 1 to initiate test check of the user using redirect_uri error. Set 0 otherwise (by default).
+
+=back
+
+=back
+
+Read more about permament tokens at L<http://vk.com/dev/auth_direct>.
+
+This method respects captcha_handler and errors_noauto parameters of the $vk object.
+
 =item $vk->api($method,{parameter => "value", parameter => "value" ...})
 
 This method calls the API methods on the server, as described on L<http://vk.com/dev/api_requests>.
@@ -241,6 +330,10 @@ Returns the last {error} subhash received (if errors_nonfatal is true).
 =item $vk->errors_noauto
 
 If true, return undef instead of automatic handling API error. If this is a coderef, it will be called with the {error} subhash as the only argument. In both cases the error will be stored and will be accessible via $vk->error method.
+
+=item $vk->access_token($token)
+
+This method returns the access_token of your $vk object and sets it (if defined), allowing you to save your permament access token and use it later (when your application restarts).
 
 =back 
 

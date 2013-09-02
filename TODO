@@ -1,3 +1,3 @@
  - sub import { if (@) { my $vk = new ...; *{caller(...)::vkapi} = sub { $vk->api(...) } }
- - permament token
+ + permament token (?)
  - file upload (http://vk.com/dev/upload_files)
