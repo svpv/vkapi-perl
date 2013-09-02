@@ -11,6 +11,21 @@ use Carp;
 
 our $VERSION = '0.11';
 
+sub import {
+	my $class = shift;
+	return unless @_;
+	my %opts = @_;
+	my @import = exists $opts{import} ? @{delete $opts{import}} : (qw/
+		auth auth_uri redirected permament_token api captcha_handler error errors_noauto access_token AUTOLOAD
+	/);
+	my $vk = $class->new(%opts);
+	my $caller = caller;
+	no strict 'refs';
+	for my $method (@import) {
+		*{$caller."::".$method} = sub { $vk->$method(@_) };
+	};
+}
+
 sub new {
 	my $class = shift;
 	my $self = bless {},$class;
@@ -346,6 +361,17 @@ Instead of calling $vk->api(...) you can substitute the "."'s by "_"'s in the AP
 should be equivalent to
 
     $vk->wall_post({message => "Hello, world!"});
+
+=head1 EXPORTS
+
+None by default.
+
+You can pass the constructor arguments to 'use Net::VKontakte::Standalone' (only hash constructor form is supported). This way it will create the $vk object for you, set up the wrappers around its methods and export them to your program (all by default). You can pass an optional parameter 'import' which should be an array reference with the list of method wrappers you need to import.
+
+This can be useful in very small scripts or one-liners. For example,
+
+    use Net::VKontakte::Standalone (access_token => "whatever", import => ['AUTOLOAD']);
+    activity_set({text => "playing with VK API"});
 
 =head1 BUGS
 
