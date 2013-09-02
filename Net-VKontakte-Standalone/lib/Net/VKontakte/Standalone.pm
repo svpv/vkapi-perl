@@ -81,20 +81,8 @@ sub redirected {
 sub api {
 	my ($self,$method,$params) = @_;
 	croak "Cannot make API calls unless authentificated" unless defined $self->{access_token};
-	if (time - $self->{auth_time} > $self->{expires_in}) {
-		if ($self->{login} && $self->{password} && $self->{scope}) {
-			$self->auth($self->{"login","password","scope"});
-		} else {
-			if ($self->{errors_noauto}) {
-				$self->{error} = "access_token expired";
-					if (ref $self->{errors_noauto} and ref $self->{errors_noauto} eq "CODE") {
-						$self->{errors_noauto}->({error_code => "none", error_msg => "access_token expired"});
-					}
-				return;
-			} else {
-				croak "access_token expired";
-			}
-		}
+	if (time - $self->{auth_time} > $self->{expires_in} and $self->{login} && $self->{password} && $self->{scope}) {
+		$self->auth($self->{"login","password","scope"});
 	}
 	$params->{access_token} = $self->{access_token};
 	REQUEST: {
@@ -119,6 +107,7 @@ sub api {
 				} else { # other special cases which can be handled automatically?
 					croak "API call returned error: ".$response->{error}{error_msg};
 				}
+				# 5 == user authorisation failed, invalid access token of any kind
 			}
 		} else {
 			croak "API call didn't return response or error\n".
