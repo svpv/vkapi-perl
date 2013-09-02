@@ -216,7 +216,7 @@ Should be a coderef to be called upon receiving {error} requiring CAPTCHA. The c
 =item $vk->auth($login,$password,$scope)
 
 This method should be called first. It uses OAuth2 to authentificate the user at the vk.com server
-and accepts the specified scope (seen at L<https://vk.com/developers.php?oid=-17680044&p=Application_Access_Rights>).
+and accepts the specified scope (seen at L<http://vk.com/dev/permissions>).
 After obtaining the access token is saved for future use.
 
 =end comment
@@ -226,8 +226,9 @@ After obtaining the access token is saved for future use.
 =item $vk->auth_uri($scope)
 
 This method should be called first. It returns the URI of the login page to show to the user
-(developer should call a browser somehow, see L<https://vk.com/developers.php?oid=-17680044&p=Authorizing_Client_Applications>
-for more info).
+(developer should call a browser somehow, see L<http://vk.com/dev/auth_mobile> for more info).
+
+The $scope parameter is described at L<http://vk.com/dev/permissions>.
 
 =item $vk->redirected($uri)
 
@@ -237,7 +238,7 @@ the $vk object.
 
 =item $vk->api($method,{parameter => "value", parameter => "value" ...})
 
-This method calls the API methods on the server, as described on L<https://vk.com/developers.php?oid=-17680044&p=Making_Requests_to_API>.
+This method calls the API methods on the server, as described on L<http://vk.com/dev/api_requests>.
 Resulting JSON is parsed and returned as a hash reference.
 
 =item $vk->captcha_handler($sub)
@@ -272,7 +273,7 @@ Currently there is no test suite.
 
 =head1 SEE ALSO
 
-L<https://vk.com/developers.php> for the list of methods and how to use them.
+L<https://vk.com/dev> for the list of methods and how to use them.
 
 =head1 AUTHOR
 
