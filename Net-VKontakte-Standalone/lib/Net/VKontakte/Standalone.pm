@@ -16,7 +16,7 @@ sub import {
 	return unless @_;
 	my %opts = @_;
 	my @import = exists $opts{import} ? @{delete $opts{import}} : (qw/
-		auth auth_uri redirected permament_token api captcha_handler error errors_noauto access_token AUTOLOAD
+		auth auth_uri redirected permament_token api post captcha_handler error errors_noauto access_token AUTOLOAD
 	/);
 	my $vk = $class->new(%opts);
 	my $caller = caller;
@@ -160,6 +160,11 @@ sub api {
 				: "";
 		}
 	}
+}
+
+sub post {
+	my ($self, $url, %fields) = @_;
+	return decode_json $self->{browser}->post($url, Content_Type => 'form_data', Content => [ %fields ]);
 }
 
 sub captcha_handler {
@@ -334,6 +339,14 @@ This method respects captcha_handler and errors_noauto parameters of the $vk obj
 This method calls the API methods on the server, as described on L<http://vk.com/dev/api_requests>.
 Resulting JSON is parsed and returned as a hash reference.
 
+=item $vk->post($url, parameter => "value", file_parameter => [$filename, ...], ... )
+
+This method makes uploading files (see L<http://vk.com/dev/upload_files>) a lot easier.
+
+Firstly, get the upload URI using the respective API method. Secondly, use this method to upload the file (NOTE: no return value error checking is done because return values are not consistent between different uploads). Finally, pass the gathered data structure to the another API method which completes your upload.
+
+HTTP::Request::Common is used to build the POST request. Read its manual page for more info on uploading files (only filename parameter is usually required).
+
 =item $vk->captcha_handler($sub)
 
 Sets the sub to call when CAPTCHA needs to be entered. Works even when errors_noauto is true.
@@ -377,7 +390,7 @@ This can be useful in very small scripts or one-liners. For example,
 
 Probably many. Feel free to report my mistakes and propose changes.
 
-Currently there is no test suite.
+Currently there is no test suite, and some features were not tested at all.
 
 =head1 SEE ALSO
 
