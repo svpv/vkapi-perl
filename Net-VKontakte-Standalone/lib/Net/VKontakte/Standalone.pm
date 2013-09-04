@@ -9,7 +9,7 @@ use WWW::Mechanize;
 use JSON;
 use Carp;
 
-our $VERSION = '0.11';
+our $VERSION = '0.18_90';
 
 sub import {
 	my $class = shift;
