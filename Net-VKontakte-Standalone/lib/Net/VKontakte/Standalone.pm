@@ -56,6 +56,7 @@ sub _request {
 sub auth { # dirty hack
 	my ($self,$login,$password,$scope) = @_;
 	@{$self}{"login","password","scope"} = ($login, $password, $scope); # reuse in case of reauth
+	$self->{browser}->cookie_jar->clear; # VK won't give us the fields if we have authentificated cookies
 	$self->{browser}->get($self->auth_uri($scope));
 	$self->{browser}->submit_form(
 		with_fields => {
