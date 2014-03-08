@@ -9,7 +9,7 @@ use WWW::Mechanize;
 use JSON;
 use Carp;
 
-our $VERSION = '0.18_90';
+our $VERSION = '0.18_95';
 
 sub import {
 	my $class = shift;
@@ -260,7 +260,7 @@ Should be a coderef to be called upon receiving {error} requiring CAPTCHA. The c
 
 =head1 METHODS
 
-=begin comment
+=over
 
 =item $vk->auth($login,$password,$scope)
 
@@ -268,9 +268,8 @@ This method should be called first. It uses OAuth2 to authentificate the user at
 and accepts the specified scope (seen at L<http://vk.com/dev/permissions>).
 After obtaining the access token is saved for future use.
 
-=end comment
-
-=over
+This is not a recommended way to authentificate standalone VKontakte applications, but it works (for now). Feel
+free to use it in small hacks but stay away from it in production.
 
 =item $vk->auth_uri($scope)
 

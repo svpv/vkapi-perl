@@ -1,6 +1,6 @@
 Revision history for Perl extension Net::VKontakte::Standalone.
 
-0.19 Thu, 05 Sep 2013 00:35:54 +0400
+0.18_95 Sat, 08 Mar 2014 23:22:18 +0400
 	- downgrade the required Perl version
 	- implement POST requests to upload photo/video/music/documents
 	- implement exports for small function-style scripts
@@ -8,6 +8,7 @@ Revision history for Perl extension Net::VKontakte::Standalone.
 	- update links to API description
 	- implement AUTOLOADed methods
 	- improve error handling
+	- reveal the auth() method
 
 0.11 Thu, 28 Feb 2013 21:50:43 +0400
 	- another rename (I promise, this is the last time)
