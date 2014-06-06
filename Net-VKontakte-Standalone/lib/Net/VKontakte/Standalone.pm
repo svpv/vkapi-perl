@@ -37,7 +37,7 @@ sub new {
 		$self->{api_id} = $_[0];
 	} elsif (@_ % 2 == 0) { # smells like hash
 		my %opt = @_;
-		for my $key (qw/api_id errors_noauto captcha_handler access_token/) {
+		for my $key (qw/api_id errors_noauto captcha_handler access_token v/) {
 			$self->{$key} = $opt{$key} if defined $opt{$key};
 		}
 	} else {
@@ -57,7 +57,7 @@ sub auth { # dirty hack
 	my ($self,$login,$password,$scope) = @_;
 	@{$self}{"login","password","scope"} = ($login, $password, $scope); # reuse in case of reauth
 	$self->{browser}->cookie_jar->clear; # VK won't give us the fields if we have authentificated cookies
-	$self->{browser}->get($self->auth_uri($scope));
+	$self->{browser}->get($self->auth_uri($scope,"wap"));
 	$self->{browser}->submit_form(
 		with_fields => {
 			email => $login,
@@ -70,13 +70,14 @@ sub auth { # dirty hack
 
 sub auth_uri {
 	my ($self, $scope, $display) = @_;
-	(my $uri = URI::->new("https://api.vkontakte.ru/oauth/authorize"))->query_form(
+	(my $uri = URI::->new("https://oauth.vk.com/authorize"))->query_form(
 		{
 			client_id => $self->{api_id},
-			redirect_uri => "blank.html",
+			redirect_uri => "https://oauth.vk.com/blank.html",
 			scope => $scope,
 			response_type => "token",
 			display => $display,
+			$self->{v} ? ( v=> $self->{v} ) : (),
 		}
 	);
 	return $uri->canonical;
@@ -131,6 +132,7 @@ sub api {
 		$self->auth($self->{"login","password","scope"});
 	}
 	$params->{access_token} = $self->{access_token};
+	$params->{v} = $self->{v} if $self->{v};
 	REQUEST: {
 		my $response = decode_json $self->_request($params,"https://api.vk.com/method/$method")->decoded_content;
 		if ($response->{response}) {
@@ -253,6 +255,10 @@ If true, return undef instead of automatic error handling (which includes limiti
 =item captcha_handler
 
 Should be a coderef to be called upon receiving {error} requiring CAPTCHA. The coderef will be called with the CAPTCHA URL as the only argument and should return the captcha answer (decoded to characters if needed). Works even when errors_noauto is true (or a coderef).
+
+=item v
+
+Version of VK API you are going to use, according to L<https://vk.com/dev/versions>. Some old version not described by today's docs is used as default.
 
 =back
 

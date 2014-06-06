@@ -1,3 +1,4 @@
+ ! specify version on auth_uri
  + sub import { if (@) { my $vk = new ...; *{caller(...)::vkapi} = sub { $vk->api(...) } }
  + permament token (?)
  + file upload (http://vk.com/dev/upload_files)

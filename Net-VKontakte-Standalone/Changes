@@ -1,5 +1,8 @@
 Revision history for Perl extension Net::VKontakte::Standalone.
 
+XXXXXXX Unreleased
+	- add API version support
+
 0.18_95 Sat, 08 Mar 2014 23:22:18 +0400
 	- downgrade the required Perl version
 	- implement POST requests to upload photo/video/music/documents
