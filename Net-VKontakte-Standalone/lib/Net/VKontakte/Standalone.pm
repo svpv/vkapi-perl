@@ -128,7 +128,7 @@ sub permament_token {
 sub api {
 	my ($self,$method,$params) = @_;
 	croak "Cannot make API calls unless authentificated" unless defined $self->{access_token};
-	if (time - $self->{auth_time} > $self->{expires_in} and $self->{login} && $self->{password} && $self->{scope}) {
+	if ($self->{expires_in} && time - $self->{auth_time} > $self->{expires_in} && $self->{login} && $self->{password} && $self->{scope}) {
 		$self->auth($self->{"login","password","scope"});
 	}
 	$params->{access_token} = $self->{access_token};
