@@ -167,7 +167,7 @@ sub api {
 
 sub post {
 	my ($self, $url, %fields) = @_;
-	return decode_json $self->{browser}->post($url, Content_Type => 'form_data', Content => [ %fields ]);
+	return decode_json $self->{browser}->post($url, Content_Type => 'form-data', Content => [ %fields ])->decoded_content;
 }
 
 sub captcha_handler {
