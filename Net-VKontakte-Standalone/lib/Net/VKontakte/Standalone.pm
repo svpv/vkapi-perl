@@ -186,6 +186,7 @@ sub api {
 
 sub post {
 	my ($self, $url, %fields) = @_;
+	local $HTTP::Request::Common::DYNAMIC_FILE_UPLOAD = 1;
 	return decode_json _retry { $self->{browser}->post($url, Content_Type => 'form-data', Content => [ %fields ])->decoded_content };
 }
 
