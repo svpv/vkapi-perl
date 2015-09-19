@@ -47,10 +47,29 @@ sub new {
 	return $self;
 }
 
+sub _retry (&) {
+	for (1..3) {
+		local $@;
+		my $ret = eval { local $SIG{__DIE__}; $_[0]->() };
+		return $ret unless $@;
+		croak $@ unless $@ =~ /: Can't connect to /;
+		sleep $_;
+	}
+	return $_[0]->();
+}
+
 sub _request {
 	my ($self, $params, $base) = @_;
 	(my $uri = URI::->new($base))->query_form($params);
-	return $self->{browser}->get($uri);
+	return _retry { $self->{browser}->get($uri) };
+}
+
+sub _api_request {
+	my ($self, $params, $base) = @_;
+	(my $uri = URI::->new($base))->query_form($params);
+	return (length($uri) < 2048) ?
+		_retry { $self->{browser}->get($uri) } :
+		_retry { $self->{browser}->post($base, $params) };
 }
 
 sub auth { # dirty hack
@@ -128,13 +147,13 @@ sub permament_token {
 sub api {
 	my ($self,$method,$params) = @_;
 	croak "Cannot make API calls unless authentificated" unless defined $self->{access_token};
-	if (time - $self->{auth_time} > $self->{expires_in} and $self->{login} && $self->{password} && $self->{scope}) {
+	if ($self->{expires_in} && time - $self->{auth_time} > $self->{expires_in} && $self->{login} && $self->{password} && $self->{scope}) {
 		$self->auth($self->{"login","password","scope"});
 	}
 	$params->{access_token} = $self->{access_token};
 	$params->{v} = $self->{v} if $self->{v};
 	REQUEST: {
-		my $response = decode_json $self->_request($params,"https://api.vk.com/method/$method")->decoded_content;
+		my $response = decode_json $self->_api_request($params,"https://api.vk.com/method/$method")->decoded_content;
 		if ($response->{response}) {
 			return $response->{response};
 		} elsif ($response->{error}) {
@@ -167,7 +186,8 @@ sub api {
 
 sub post {
 	my ($self, $url, %fields) = @_;
-	return decode_json $self->{browser}->post($url, Content_Type => 'form_data', Content => [ %fields ]);
+	local $HTTP::Request::Common::DYNAMIC_FILE_UPLOAD = 1;
+	return decode_json _retry { $self->{browser}->post($url, Content_Type => 'form-data', Content => [ %fields ])->decoded_content };
 }
 
 sub captcha_handler {
