@@ -52,7 +52,8 @@ sub _retry (&) {
 		local $@;
 		my $ret = eval { local $SIG{__DIE__}; $_[0]->() };
 		return $ret unless $@;
-		croak $@ unless $@ =~ /: Can't connect to /;
+		croak $@ unless $@ =~ /: Can't connect to / or
+				$@ =~ /: Internal Server Error /;
 		sleep $_;
 	}
 	return $_[0]->();
